@@ -8,6 +8,9 @@ const viewsRouter = require('./routes/viewsRouter')
 const productManager = require('./managers/productManager')
 const cartsRouter = require('./routes/cartsRouter');
 const { Socket } = require('dgram');
+const connectDB = require('./config/db'); // Importar la conexión a MongoDB
+
+connectDB();
 
 const app = express();
 const httpServer = createServer(app);
@@ -21,15 +24,18 @@ app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/products', productRouter);
 app.use('/api/products', productRouter);
 app.use('/', viewsRouter);
-app.use('/carts', cartsRouter);
+app.use('/api/carts', cartsRouter);
 
-io.on('connection', (socket) => {
+app.get('/', (req, res) => {
+  res.send('Bienvenido al servidor');
+});
+
+io.on('connection', async (socket) => {
     console.log('Nuevo cliente conectado');
 
-    socket.emit('productList', productManager.getAllProducts());
+    socket.emit('productList', await productManager.getAllProducts());
 
     socket.on('createProduct', async (productData) => {
       const newProduct = await productManager.addProduct(productData);
